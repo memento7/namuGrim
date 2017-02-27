@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[32]:
+# In[1]:
 
 from konlpy.tag import Twitter
 import pandas as pd
@@ -16,25 +16,31 @@ tagger = Twitter()
 
 # ## load pickle
 
-# In[39]:
+# In[3]:
 
 with open('../data/actors.pick', 'rb') as f:
     actors = pickle.load(f)
 
 
-# In[3]:
+# In[11]:
+
+print (actors.shape)
+actors.head(3)
+
+
+# In[4]:
 
 with open('../data/namuwiki.pick', 'rb') as f:
     frame = pickle.load(f)
 
 
-# In[4]:
+# In[5]:
 
 print (frame.shape)
 frame.head(3)
 
 
-# In[5]:
+# In[6]:
 
 def get_article(title):
     p = frame.loc[frame['title'] == title]
@@ -43,7 +49,7 @@ def get_article(title):
     return p.text.values[0]
 
 
-# In[20]:
+# In[7]:
 
 pat_redirect = re.compile('^#redirect (.+)')
 pat_index = re.compile('(.+?)\#(.+)')
@@ -61,7 +67,7 @@ def check_redirect(text):
         return False
 
 
-# In[7]:
+# In[8]:
 
 pat_bracket = re.compile(r'\[\[(.+?)\]\]')
 pat_file = re.compile(r'\[\[파일:(.+)\]\]')
@@ -123,56 +129,41 @@ def context_filter(text):
     return text
 
 
-# In[63]:
+# In[9]:
 
 def tokenize(content):
     return ["{}/{}".format(word, tag) for word, tag in tagger.pos(content) if tag == 'Noun']
 
 
-# In[9]:
+# In[15]:
 
-class FrameIter:
-    def __init__(self, frame, filt=lambda x:x):
+class Words:
+    def __init__(self, frame, filt = lambda x: x):
         self.frame = frame
         self.filt = filt
     
     def __iter__(self):
-        for _, article in self.frame.iterrows():
+        for idx, article in self.frame.iterrows():
+            if not idx % 10000: print(idx)
             yield self.filt(article)
 
 
 # # word2vec
 
-# In[10]:
+# In[16]:
 
 import gensim
 
 
-# In[11]:
+# In[17]:
 
-frameiter = FrameIter(frame, filt=lambda x : tokenize(context_filter(article_filter(x.text))))
+filt = lambda x: tokenize(context_filter(article_filter(x.text)))
 
-
-# In[ ]:
-
-words = []
-for idx, article in frame.iterrows():
-    words.append(tokenize(context_filter(article_filter(article[2]))))
-print('www')
-
-# In[ ]:
-pickle.dump(words, open('../articles.pick', 'rb'))
-model = gensim.models.Word2Vec()
-
+namuWiki = Words(frame, filt=lambda x : tokenize(context_filter(article_filter(x.text))))
 
 # In[ ]:
 
-model.build_vocab(words)
-
-
-# In[ ]:
-
-model.train(words)
+model = gensim.models.Word2Vec([ filt(article) for idx, article in frame.iterrows() ])
 
 
 # In[ ]:
@@ -183,11 +174,6 @@ model.save('../data/model')
 # In[ ]:
 
 model.most_similar('아이유/Noun')
-
-
-# In[ ]:
-
-pickle.dump(words, open('../article_list.namu.wiki', 'rb'))
 
 
 # In[ ]:
