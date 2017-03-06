@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[3]:
 
 from konlpy.tag import Twitter
 import pandas as pd
@@ -9,38 +9,38 @@ import pickle
 import re
 
 
-# In[2]:
+# In[4]:
 
 tagger = Twitter()
 
 
 # ## load pickle
 
-# In[3]:
+# In[5]:
 
 with open('../data/actors.pick', 'rb') as f:
     actors = pickle.load(f)
 
 
-# In[11]:
+# In[6]:
 
 print (actors.shape)
 actors.head(3)
 
 
-# In[4]:
+# In[7]:
 
 with open('../data/namuwiki.pick', 'rb') as f:
     frame = pickle.load(f)
 
 
-# In[5]:
+# In[8]:
 
 print (frame.shape)
 frame.head(3)
 
 
-# In[6]:
+# In[22]:
 
 def get_article(title):
     p = frame.loc[frame['title'] == title]
@@ -49,7 +49,7 @@ def get_article(title):
     return p.text.values[0]
 
 
-# In[7]:
+# In[23]:
 
 pat_redirect = re.compile('^#redirect (.+)')
 pat_index = re.compile('(.+?)\#(.+)')
@@ -67,7 +67,7 @@ def check_redirect(text):
         return False
 
 
-# In[8]:
+# In[24]:
 
 pat_bracket = re.compile(r'\[\[(.+?)\]\]')
 pat_file = re.compile(r'\[\[파일:(.+)\]\]')
@@ -129,13 +129,13 @@ def context_filter(text):
     return text
 
 
-# In[9]:
+# In[25]:
 
 def tokenize(content):
     return ["{}/{}".format(word, tag) for word, tag in tagger.pos(content) if tag == 'Noun']
 
 
-# In[15]:
+# In[26]:
 
 class Words:
     def __init__(self, frame, filt = lambda x: x):
@@ -143,27 +143,40 @@ class Words:
         self.filt = filt
     
     def __iter__(self):
-        for idx, article in self.frame.iterrows():
-            if not idx % 10000: print(idx)
+        for _, article in self.frame.iterrows():
             yield self.filt(article)
 
 
 # # word2vec
 
-# In[16]:
+# In[27]:
 
 import gensim
 
 
-# In[17]:
+# In[28]:
 
-filt = lambda x: tokenize(context_filter(article_filter(x.text)))
+namuWords = Words(frame, filt=lambda x : tokenize(context_filter(article_filter(x.text))))
 
-namuWiki = Words(frame, filt=lambda x : tokenize(context_filter(article_filter(x.text))))
+
+# In[29]:
+
+namuTrains = Words(frame, filt=lambda x : tokenize(context_filter(article_filter(x.text))))
+
 
 # In[ ]:
 
-model = gensim.models.Word2Vec([ filt(article) for idx, article in frame.iterrows() ])
+model = gensim.models.Word2Vec()
+
+
+# In[ ]:
+
+model.build_vocab(namuWords)
+
+
+# In[ ]:
+
+model.train(namuTrains)
 
 
 # In[ ]:
