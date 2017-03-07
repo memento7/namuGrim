@@ -6,15 +6,12 @@
 import pandas as pd
 from konlpy.tag import Twitter
 
-# In[13]:
-
-contents = pd.read_csv('../../newsCraw/data/newsContents.csv')
-print (contents.shape)
-
-# In[8]:
+# In[4]:
 
 def getContents(actor):
     return contents.loc[contents['actor'] == actor]
+
+# In[5]:
 
 tagger = Twitter()
 
@@ -33,18 +30,27 @@ def extract(tokens, n=15):
 def tokenize(content):
     return extract(getTokens(content), 25)
 
+
+# In[ ]:
+
 fileName = 'check.json'
 import json
 loaded = False
 from os.path import isfile
+contents = []
 def load():
     global loaded
+    global contents
     print ('load')
     loaded = True
     if isfile(fileName): 
         with open(fileName, 'r') as chk:
             ret = json.load(chk)
+        contents = pd.read_csv(open('../../newsCraw/data/newsTag-' + ret['idx'] + '.csv', 'rU'), encoding='utf-8', engine='c')
+        print(contents.shape)
         return int(ret['idx'])
+    contents = pd.read_csv('../../newsCraw/data/newsContents.csv')
+    print (contents.shape)
     return 0
 
 def save(idx):
@@ -54,17 +60,25 @@ def save(idx):
     with open(fileName, 'w') as chk:
         json.dump(ret, chk) 
 
-print ('start')
+
+# In[ ]:
+
+ldx = load()
 for idx, content in contents.iterrows():
-    if not loaded: ldx = load()
     if idx < ldx: continue 
     if not idx % 10000:
         print('start saving')
         contents.to_csv('../../newsCraw/data/newsTag-' + str(idx) + '.csv')
         save(idx)
-    content.tokens = tokenize(content.content)
+    contents.set_value(idx, 'tokens', tokenize(content.content))
 
-print('done.')
+
 # In[ ]:
 
+contents.to_csv('../../newsCraw/data/newsTag.csv')
+
+
+# In[ ]:
+
+print ('done')
 
