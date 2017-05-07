@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[3]:
+# In[1]:
 
 from konlpy.tag import Twitter
 import pandas as pd
@@ -9,38 +9,26 @@ import pickle
 import re
 
 
-# In[4]:
+# In[2]:
 
 tagger = Twitter()
 
 
 # ## load pickle
 
-# In[5]:
+# In[8]:
 
-with open('../data/actors.pick', 'rb') as f:
-    actors = pickle.load(f)
-
-
-# In[6]:
-
-print (actors.shape)
-actors.head(3)
-
-
-# In[7]:
-
-with open('../data/namuwiki.pick', 'rb') as f:
+with open('/backup/namuGrim/data/namuwiki.p', 'rb') as f:
     frame = pickle.load(f)
 
 
-# In[8]:
+# In[9]:
 
 print (frame.shape)
 frame.head(3)
 
 
-# In[22]:
+# In[10]:
 
 def get_article(title):
     p = frame.loc[frame['title'] == title]
@@ -49,7 +37,7 @@ def get_article(title):
     return p.text.values[0]
 
 
-# In[23]:
+# In[11]:
 
 pat_redirect = re.compile('^#redirect (.+)')
 pat_index = re.compile('(.+?)\#(.+)')
@@ -67,7 +55,7 @@ def check_redirect(text):
         return False
 
 
-# In[24]:
+# In[12]:
 
 pat_bracket = re.compile(r'\[\[(.+?)\]\]')
 pat_file = re.compile(r'\[\[파일:(.+)\]\]')
@@ -129,13 +117,16 @@ def context_filter(text):
     return text
 
 
-# In[25]:
+# In[13]:
 
-def tokenize(content):
-    return ["{}/{}".format(word, tag) for word, tag in tagger.pos(content) if tag == 'Noun']
+def tokenize(content): 
+    if len(content) > 8192:
+        return tokenize(content[:8192]) + tokenize(content[8192:])
+    else:
+        return ["{}/{}".format(word, tag) for word, tag in tagger.pos(content) if tag == 'Noun']
 
 
-# In[26]:
+# In[14]:
 
 class Words:
     def __init__(self, frame, filt = lambda x: x):
@@ -149,24 +140,24 @@ class Words:
 
 # # word2vec
 
-# In[27]:
+# In[16]:
 
 import gensim
 
 
-# In[28]:
+# In[17]:
 
 namuWords = Words(frame, filt=lambda x : tokenize(context_filter(article_filter(x.text))))
 
 
-# In[29]:
+# In[18]:
 
 namuTrains = Words(frame, filt=lambda x : tokenize(context_filter(article_filter(x.text))))
 
 
-# In[ ]:
+# In[21]:
 
-model = gensim.models.Word2Vec()
+model = gensim.models.Word2Vec(window=5000)
 
 
 # In[ ]:
@@ -187,9 +178,4 @@ model.save('../data/model')
 # In[ ]:
 
 model.most_similar('아이유/Noun')
-
-
-# In[ ]:
-
-
 
