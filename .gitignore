@@ -1,11 +1,12 @@
 data/
+conf/connection.json
+
 __pycache__/
 .ipynb_checkpoints/
 *.DS_Store
 .Python
 [Bb]in
 [Ii]nclude
-[Ll]ib
 [Ll]ib64
 [Ll]ocal
 [Ss]cripts
