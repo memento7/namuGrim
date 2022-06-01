@@ -51,7 +51,7 @@ class Connection:
                     }
                 }    
             })
-            return search_result['hits']['total'] != 0
+            return search_result['hits']['total']['value'] != 0
 
         if exist(info['keyword']):
             # TODO: update
